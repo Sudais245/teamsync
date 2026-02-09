@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamSync - Employee Management & Collaboration Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-item:hover, .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+            border-left: 3px solid #6366f1;
+        }
+        
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        
+        .message-bubble {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .calendar-day {
+            min-height: 100px;
+            transition: all 0.2s;
+        }
+        
+        .calendar-day:hover {
+            background-color: #f3f4f6;
+            transform: scale(1.02);
+        }
+        
+        .timer-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+        
+        .channel-tag {
+            transition: all 0.2s;
+        }
+        
+        .channel-tag:hover {
+            transform: translateX(5px);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c7c7c7;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700">
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fas fa-users text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">TeamSync</h1>
+                <p class="text-gray-600 mt-2">Workplace Management Platform</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="loginEmail" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" placeholder="you@company.com" value="admin@teamsync.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="loginPassword" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" placeholder="••••••••" value="password">
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition transform hover:scale-[1.02] shadow-lg">
+                    Sign In
+                </button>
+            </div>
+            
+            <div class="mt-6 text-center text-sm text-gray-600">
+                <p>Demo Accounts:</p>
+                <p class="mt-1">admin@teamsync.com / password (Admin)</p>
+                <p>employee@teamsync.com / password (Employee)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden h-screen flex overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-xl flex flex-col z-20">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg text-gray-800">TeamSync</h2>
+                        <p class="text-xs text-gray-500">Workspace</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto py-4">
+                <div class="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Main</div>
+                <a href="#" onclick="switchTab('dashboard')" class="sidebar-item active flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-indigo-600" id="nav-dashboard">
+                    <i class="fas fa-home w-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="switchTab('attendance')" class="sidebar-item flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-indigo-600" id="nav-attendance">
+                    <i class="fas fa-clock w-5"></i>
+                    <span>Time Tracker</span>
+                </a>
+                <a href="#" onclick="switchTab('calendar')" class="sidebar-item flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-indigo-600" id="nav-calendar">
+                    <i class="fas fa-calendar-alt w-5"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="#" onclick="switchTab('employees')" class="sidebar-item flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-indigo-600" id="nav-employees">
+                    <i class="fas fa-user-tie w-5"></i>
+                    <span>Employees</span>
+                </a>
+
+                <div class="px-4 mt-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Teams & Channels</div>
+                <div id="channelsList" class="space-y-1">
+                    <!-- Dynamic channels -->
+                </div>
+                
+                <button onclick="createNewChannel()" class="mx-6 mt-3 text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Add Channel
+                </button>
+
+                <div class="px-4 mt-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Messages</div>
+                <a href="#" onclick="switchTab('messages')" class="sidebar-item flex items-center gap-3 px-6 py-3 text-gray-700 hover:text-indigo-600" id="nav-messages">
+                    <i class="fas fa-comments w-5"></i>
+                    <span>Direct Messages</span>
+                    <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5" id="msgBadge">3</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff" class="w-10 h-10 rounded-full" id="currentUserAvatar">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate" id="currentUserName">Admin User</p>
+                        <p class="text-xs text-gray-500 truncate" id="currentUserRole">Administrator</p>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+            
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800" id="pageTitle">Dashboard</h1>
+                    <p class="text-sm text-gray-500" id="currentDate">Loading...</p>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search employees..." class="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                    <button class="p-2 text-gray-400 hover:text-gray-600 relative">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto p-8" id="contentArea">
+                
+                <!-- Dashboard View -->
+                <div id="view-dashboard" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Total Employees</p>
+                                    <p class="text-3xl font-bold text-gray-800 mt-1">24</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Currently Working</p>
+                                    <p class="text-3xl font-bold text-green-600 mt-1">18</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                                    <i class="fas fa-user-check text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">On Leave</p>
+                                    <p class="text-3xl font-bold text-orange-600 mt-1">4</p>
+                                </div>
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
+                                    <i class="fas fa-coffee text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500">Hours Today</p>
+                                    <p class="text-3xl font-bold text-indigo-600 mt-1">142h</p>
+                                </div>
+                                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-semibold mb-4">Attendance Overview</h3>
+                            <canvas id="attendanceChart" height="200"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                            <div class="space-y-4" id="activityFeed">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Tracker View -->
+                <div id="view-attendance" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center max-w-2xl mx-auto">
+                        <div class="mb-8">
+                            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-indigo-50 mb-4 pulse-ring" id="timerCircle">
+                                <i class="fas fa-play text-3xl text-indigo-600" id="timerIcon"></i>
+                            </div>
+                            <div class="timer-display text-6xl font-bold text-gray-800 font-mono tracking-tight" id="timerDisplay">00:00:00</div>
+                            <p class="text-gray-500 mt-2" id="timerStatus">Ready to start your day</p>
+                        </div>
+                        
+                        <div class="flex justify-center gap-4">
+                            <button onclick="toggleTimer()" id="timerBtn" class="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition shadow-lg flex items-center gap-2">
+                                <i class="fas fa-play" id="timerBtnIcon"></i>
+                                <span id="timerBtnText">Clock In</span>
+                            </button>
+                            <button onclick="takeBreak()" id="breakBtn" class="px-8 py-3 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 transition hidden">
+                                <i class="fas fa-coffee mr-2"></i>Take Break
+                            </button>
+                        </div>
+
+                        <div class="mt-8 pt-8 border-t border-gray-200 grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800">8h 24m</p>
+                                <p class="text-sm text-gray-500">Today</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800">42h 15m</p>
+                                <p class="text-sm text-gray-500">This Week</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800">164h 30m</p>
+                                <p class="text-sm text-gray-500">This Month</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">Today's Team Activity</h3>
+                            <button onclick="generateReport()" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                                <i class="fas fa-download mr-1"></i> Export Report
+                            </button>
+                        </div>
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Clock In</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Session</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200" id="attendanceTable">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div id="view-calendar" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800" id="calendarMonth">February 2026</h2>
+                            <div class="flex gap-2">
+                                <button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-100 rounded-lg"><i class="fas fa-chevron-left"></i></button>
+                                <button onclick="goToToday()" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-medium hover:bg-indigo-100">Today</button>
+                                <button onclick="changeMonth(1)" class="p-2 hover:bg-gray-100 rounded-lg"><i class="fas fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Sun</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Mon</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Tue</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Wed</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Thu</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Fri</div>
+                            <div class="bg-gray-50 p-3 text-center text-sm font-semibold text-gray-600">Sat</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-px bg-gray-200" id="calendarGrid">
+                            <!-- Calendar days generated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                <span class="w-3 h-3 bg-blue-500 rounded-full"></span>
+                                Upcoming Meetings
+                            </h3>
+                            <div class="space-y-3" id="upcomingMeetings">
+                                <!-- Dynamic -->
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="font-semibold mb-3 flex items-center gap-2">
+                                <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                                Leave Requests
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-sm">Sarah Johnson</p>
+                                        <p class="text-xs text-gray-500">Feb 12-14 (Vacation)</p>
+                                    </div>
+                                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pending</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-sm">Mike Chen</p>
+                                        <p class="text-xs text-gray-500">Feb 15 (Sick)</p>
+                                    </div>
+                                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Approved</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 class="font-semibold mb-3">Quick Add Event</h3>
+                            <form onsubmit="addEvent(event)" class="space-y-3">
+                                <input type="text" placeholder="Event title" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                                <input type="date" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" required>
+                                <select class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option>Meeting</option>
+                                    <option>Leave</option>
+                                    <option>Deadline</option>
+                                    <option>Other</option>
+                                </select>
+                                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">Add Event</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employees View -->
+                <div id="view-employees" class="hidden space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex gap-4">
+                            <select class="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option>All Departments</option>
+                                <option>Engineering</option>
+                                <option>Design</option>
+                                <option>Marketing</option>
+                                <option>HR</option>
+                            </select>
+                            <select class="px-4 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option>All Status</option>
+                                <option>Active</option>
+                                <option>On Leave</option>
+                                <option>Inactive</option>
+                            </select>
+                        </div>
+                        <button onclick="addEmployee()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                            <i class="fas fa-plus"></i> Add Employee
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="employeesGrid">
+                        <!-- Employee cards generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Messages View -->
+                <div id="view-messages" class="hidden h-[calc(100vh-140px)] flex gap-6">
+                    <div class="w-80 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                        <div class="p-4 border-b border-gray-200">
+                            <h3 class="font-semibold">Conversations</h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto" id="conversationsList">
+                            <!-- Dynamic conversations -->
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=random" class="w-10 h-10 rounded-full">
+                                <div>
+                                    <h3 class="font-semibold">Sarah Johnson</h3>
+                                    <p class="text-xs text-green-600 flex items-center gap-1">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span> Online
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-phone"></i></button>
+                                <button class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-video"></i></button>
+                                <button class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-info-circle"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messagesContainer">
+                            <!-- Messages -->
+                        </div>
+                        
+                        <div class="p-4 border-t border-gray-200">
+                            <form onsubmit="sendMessage(event)" class="flex gap-2">
+                                <button type="button" class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-paperclip"></i></button>
+                                <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 px-4 py-2 border rounded-full focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button type="submit" class="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Channel/Team View -->
+                <div id="view-channel" class="hidden h-[calc(100vh-140px)] flex gap-6">
+                    <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                        <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                                    <i class="fas fa-hashtag" id="channelIcon"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-lg" id="channelName">general</h3>
+                                    <p class="text-xs text-gray-500" id="channelDesc">General discussion for the team</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex -space-x-2" id="channelMembers">
+                                    <!-- Member avatars -->
+                                </div>
+                                <button class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-cog"></i></button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="channelMessages">
+                            <!-- Channel messages -->
+                        </div>
+                        
+                        <div class="p-4 border-t border-gray-200">
+                            <form onsubmit="sendChannelMessage(event)" class="flex gap-2">
+                                <input type="text" id="channelInput" placeholder="Message #general..." class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button type="button" class="p-2 text-gray-400 hover:text-gray-600"><i class="fas fa-at"></i></button>
+                                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Send</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // App State
+        let currentUser = null;
+        let timerInterval = null;
+        let timerSeconds = 0;
+        let isTimerRunning = false;
+        let currentTab = 'dashboard';
+        let currentMonth = new Date();
+        let channels = [
+            { id: 'general', name: 'general', icon: 'fa-hashtag', desc: 'Company-wide announcements', members: 24 },
+            { id: 'engineering', name: 'engineering', icon: 'fa-code', desc: 'Technical discussions', members: 8 },
+            { id: 'design', name: 'design', icon: 'fa-paint-brush', desc: 'Design team channel', members: 5 },
+            { id: 'random', name: 'random', icon: 'fa-hashtag', desc: 'Off-topic conversations', members: 24 }
+        ];
+        
+        let employees = [
+            { id: 1, name: 'Alex Thompson', role: 'Senior Developer', dept: 'Engineering', status: 'active', avatar: 'Alex+Thompson', hours: '8h 12m' },
+            { id: 2, name: 'Sarah Johnson', role: 'Product Designer', dept: 'Design', status: 'active', avatar: 'Sarah+Johnson', hours: '7h 45m' },
+            { id: 3, name: 'Mike Chen', role: 'Marketing Lead', dept: 'Marketing', status: 'leave', avatar: 'Mike+Chen', hours: '0h' },
+            { id: 4, name: 'Emily Davis', role: 'HR Manager', dept: 'HR', status: 'active', avatar: 'Emily+Davis', hours: '6h 30m' },
+            { id: 5, name: 'James Wilson', role: 'Backend Dev', dept: 'Engineering', status: 'active', avatar: 'James+Wilson', hours: '8h 05m' },
+            { id: 6, name: 'Lisa Anderson', role: 'UI Designer', dept: 'Design', status: 'offline', avatar: 'Lisa+Anderson', hours: '0h' }
+        ];
+
+        let messages = [
+            { id: 1, sender: 'Sarah Johnson', text: 'Hey! Did you check the new designs?', time: '10:30 AM', self: false },
+            { id: 2, sender: 'You', text: 'Yes, they look great! I left some comments on Figma.', time: '10:32 AM', self: true },
+            { id: 3, sender: 'Sarah Johnson', text: 'Awesome, thanks for the quick feedback!', time: '10:33 AM', self: false }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDate();
+            renderChannels();
+            renderEmployees();
+            renderAttendanceTable();
+            renderConversations();
+            renderMessages();
+            initChart();
+            generateCalendar();
+        });
+
+        function updateDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', options);
+        }
+
+        // Auth
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (email && password) {
+                currentUser = {
+                    email: email,
+                    name: email.includes('admin') ? 'Admin User' : 'Employee User',
+                    role: email.includes('admin') ? 'Administrator' : 'Employee',
+                    avatar: email.includes('admin') ? 'Admin+User' : 'Employee+User'
+                };
+                
+                document.getElementById('currentUserName').textContent = currentUser.name;
+                document.getElementById('currentUserRole').textContent = currentUser.role;
+                document.getElementById('currentUserAvatar').src = `https://ui-avatars.com/api/?name=${currentUser.avatar}&background=6366f1&color=fff`;
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // Navigation
+        function switchTab(tab) {
+            // Hide all views
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            
+            // Show selected view
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            
+            currentTab = tab;
+            document.getElementById('pageTitle').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+            
+            if (tab === 'calendar') generateCalendar();
+        }
+
+        // Timer/Attendance
+        function toggleTimer() {
+            const btn = document.getElementById('timerBtn');
+            const btnText = document.getElementById('timerBtnText');
+            const btnIcon = document.getElementById('timerBtnIcon');
+            const status = document.getElementById('timerStatus');
+            const circle = document.getElementById('timerCircle');
+            const breakBtn = document.getElementById('breakBtn');
+            
+            if (!isTimerRunning) {
+                isTimerRunning = true;
+                btnText.textContent = 'Clock Out';
+                btnIcon.className = 'fas fa-stop';
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                btn.classList.add('bg-red-600', 'hover:bg-red-700');
+                status.textContent = 'Working...';
+                circle.classList.add('pulse-ring');
+                breakBtn.classList.remove('hidden');
+                
+                timerInterval = setInterval(() => {
+                    timerSeconds++;
+                    updateTimerDisplay();
+                }, 1000);
+            } else {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btnText.textContent = 'Clock In';
+                btnIcon.className = 'fas fa-play';
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                status.textContent = 'Shift ended';
+                circle.classList.remove('pulse-ring');
+                breakBtn.classList.add('hidden');
+                
+                // Reset for demo
+                setTimeout(() => {
+                    timerSeconds = 0;
+                    updateTimerDisplay();
+                    status.textContent = 'Ready to start your day';
+                }, 2000);
+            }
+        }
+
+        function updateTimerDisplay() {
+            const hours = Math.floor(timerSeconds / 3600);
+            const minutes = Math.floor((timerSeconds % 3600) / 60);
+            const seconds = timerSeconds % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function takeBreak() {
+            alert('Break mode activated! Timer paused.');
+        }
+
+        // Calendar
+        function generateCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            document.getElementById('calendarMonth').textContent = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Empty cells
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += '<div class="bg-white p-2 min-h-[100px]"></div>';
+            }
+            
+            // Days
+            const today = new Date().getDate();
+            const isCurrentMonth = new Date().getMonth() === month;
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = isCurrentMonth && day === today;
+                const hasEvent = [5, 12, 15, 20, 25].includes(day);
+                
+                grid.innerHTML += `
+                    <div class="calendar-day bg-white p-2 relative ${isToday ? 'bg-indigo-50 border-2 border-indigo-200' : ''}">
+                        <span class="text-sm font-medium ${isToday ? 'text-indigo-600' : 'text-gray-700'}">${day}</span>
+                        ${hasEvent ? `
+                            <div class="mt-1 text-xs p-1 rounded ${day === 12 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'} truncate">
+                                ${day === 12 ? 'Team Meeting' : day === 15 ? 'Project Deadline' : 'Review'}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            generateCalendar();
+        }
+
+        function goToToday() {
+            currentMonth = new Date();
+            generateCalendar();
+        }
+
+        function addEvent(e) {
+            e.preventDefault();
+            alert('Event added successfully!');
+            e.target.reset();
+        }
+
+        // Employees
+        function renderEmployees() {
+            const grid = document.getElementById('employeesGrid');
+            grid.innerHTML = employees.map(emp => `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-4">
+                            <img src="https://ui-avatars.com/api/?name=${emp.avatar}&background=random" class="w-12 h-12 rounded-full">
+                            <div>
+                                <h3 class="font-semibold text-gray-800">${emp.name}</h3>
+                                <p class="text-sm text-gray-500">${emp.role}</p>
+                                <span class="inline-block mt-1 text-xs px-2 py-1 rounded-full ${getStatusColor(emp.status)}">
+                                    ${emp.status}
+                                </span>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-gray-600"><i class="fas fa-ellipsis-v"></i></button>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
+                        <span class="text-gray-500">${emp.dept}</span>
+                        <span class="font-medium text-gray-700">${emp.hours} today</span>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button class="flex-1 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Message</button>
+                        <button class="flex-1 py-2 text-sm bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100">Profile</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                active: 'bg-green-100 text-green-800',
+                offline: 'bg-gray-100 text-gray-800',
+                leave: 'bg-orange-100 text-orange-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function addEmployee() {
+            const name = prompt('Enter employee name:');
+            if (name) {
+                employees.push({
+                    id: employees.length + 1,
+                    name: name,
+                    role: 'New Hire',
+                    dept: 'Unassigned',
+                    status: 'offline',
+                    avatar: name.replace(' ', '+'),
+                    hours: '0h'
+                });
+                renderEmployees();
+            }
+        }
+
+        // Attendance Table
+        function renderAttendanceTable() {
+            const tbody = document.getElementById('attendanceTable');
+            tbody.innerHTML = employees.filter(e => e.status === 'active').map(emp => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 flex items-center gap-3">
+                        <img src="https://ui-avatars.com/api/?name=${emp.avatar}&background=random" class="w-8 h-8 rounded-full">
+                        <span class="font-medium text-gray-900">${emp.name}</span>
+                    </td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Working</span></td>
+                    <td class="px-6 py-4 text-gray-600">09:00 AM</td>
+                    <td class="px-6 py-4 font-mono text-gray-600">${emp.hours}</td>
+                    <td class="px-6 py-4">
+                        <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">View Details</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Channels
+        function renderChannels() {
+            const container = document.getElementById('channelsList');
+            container.innerHTML = channels.map(ch => `
+                <a href="#" onclick="openChannel('${ch.id}')" class="channel-tag sidebar-item flex items-center gap-3 px-6 py-2 text-gray-600 hover:text-indigo-600">
+                    <i class="fas ${ch.icon} w-5 text-gray-400"></i>
+                    <span class="truncate">${ch.name}</span>
+                    ${ch.id === 'general' ? '<span class="ml-auto text-xs text-gray-400">24</span>' : ''}
+                </a>
+            `).join('');
+        }
+
+        function openChannel(channelId) {
+            const channel = channels.find(c => c.id === channelId);
+            document.getElementById('channelName').textContent = channel.name;
+            document.getElementById('channelDesc').textContent = channel.desc;
+            document.getElementById('channelIcon').className = `fas ${channel.icon}`;
+            
+            // Generate fake channel messages
+            const container = document.getElementById('channelMessages');
+            container.innerHTML = `
+                <div class="text-center text-gray-400 text-sm my-4">Today</div>
+                <div class="flex gap-3 message-bubble">
+                    <img src="https://ui-avatars.com/api/?name=Alex+Thompson&background=random" class="w-8 h-8 rounded-full">
+                    <div class="bg-gray-100 rounded-lg p-3 max-w-[80%]">
+                        <p class="text-sm font-medium text-gray-900">Alex Thompson</p>
+                        <p class="text-gray-700">Good morning team! Don't forget about the standup at 10.</p>
+                        <p class="text-xs text-gray-400 mt-1">09:15 AM</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 message-bubble flex-row-reverse">
+                    <img src="https://ui-avatars.com/api/?name=${currentUser ? currentUser.avatar : 'User'}&background=6366f1&color=fff" class="w-8 h-8 rounded-full">
+                    <div class="bg-indigo-600 text-white rounded-lg p-3 max-w-[80%]">
+                        <p>Thanks for the reminder! I'll be there.</p>
+                        <p class="text-xs text-indigo-200 mt-1">09:16 AM</p>
+                    </div>
+                </div>
+            `;
+            
+            switchTab('channel');
+        }
+
+        function createNewChannel() {
+            const name = prompt('Enter channel name:');
+            if (name) {
+                channels.push({
+                    id: name.toLowerCase().replace(/\s+/g, '-'),
+                    name: name,
+                    icon: 'fa-hashtag',
+                    desc: `Channel for ${name}`,
+                    members: 1
+                });
+                renderChannels();
+            }
+        }
+
+        function sendChannelMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('channelInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const container = document.getElementById('channelMessages');
+            container.innerHTML += `
+                <div class="flex gap-3 message-bubble flex-row-reverse">
+                    <img src="https://ui-avatars.com/api/?name=${currentUser ? currentUser.avatar : 'User'}&background=6366f1&color=fff" class="w-8 h-8 rounded-full">
+                    <div class="bg-indigo-600 text-white rounded-lg p-3 max-w-[80%]">
+                        <p>${text}</p>
+                        <p class="text-xs text-indigo-200 mt-1">Just now</p>
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Messages
+        function renderConversations() {
+            const list = document.getElementById('conversationsList');
+            const conversations = [
+                { name: 'Sarah Johnson', msg: 'Did you check the designs?', time: '10:30', unread: 2, online: true },
+                { name: 'Engineering Team', msg: 'Alex: Deploy is ready', time: '09:15', unread: 0, online: false, group: true },
+                { name: 'Mike Chen', msg: 'See you tomorrow!', time: 'Yesterday', unread: 0, online: false }
+            ];
+            
+            list.innerHTML = conversations.map((conv, idx) => `
+                <div class="p-4 hover:bg-gray-50 cursor-pointer border-l-4 ${idx === 0 ? 'border-indigo-600 bg-indigo-50' : 'border-transparent'}" onclick="loadConversation('${conv.name}')">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=${conv.name.replace(' ', '+')}&background=random" class="w-10 h-10 rounded-full">
+                            ${conv.online ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline">
+                                <h4 class="font-medium text-gray-900 truncate">${conv.name}</h4>
+                                <span class="text-xs text-gray-500">${conv.time}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 truncate">${conv.msg}</p>
+                        </div>
+                        ${conv.unread > 0 ? `<span class="bg-indigo-600 text-white text-xs rounded-full px-2 py-0.5">${conv.unread}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadConversation(name) {
+            document.querySelector('#view-messages h3').textContent = name;
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = messages.map(msg => `
+                <div class="flex gap-3 message-bubble ${msg.self ? 'flex-row-reverse' : ''}">
+                    <img src="https://ui-avatars.com/api/?name=${msg.sender.replace(' ', '+')}&background=${msg.self ? '6366f1&color=fff' : 'random'}" class="w-8 h-8 rounded-full">
+                    <div class="${msg.self ? 'bg-indigo-600 text-white' : 'bg-gray-100'} rounded-lg p-3 max-w-[80%]">
+                        ${!msg.self ? `<p class="text-sm font-medium text-gray-900 mb-1">${msg.sender}</p>` : ''}
+                        <p>${msg.text}</p>
+                        <p class="text-xs ${msg.self ? 'text-indigo-200' : 'text-gray-400'} mt-1">${msg.time}</p>
+                    </div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            messages.push({
+                id: messages.length + 1,
+                sender: 'You',
+                text: text,
+                time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                self: true
+            });
+            
+            input.value = '';
+            renderMessages();
+            
+            // Simulate reply
+            setTimeout(() => {
+                messages.push({
+                    id: messages.length + 1,
+                    sender: 'Sarah Johnson',
+                    text: 'Thanks for the update! 👍',
+                    time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                    self: false
+                });
+                renderMessages();
+            }, 2000);
+        }
+
+        // Reports
+        function generateReport() {
+            const reportData = {
+                date: new Date().toLocaleDateString(),
+                totalHours: '142h 30m',
+                employeesPresent: 18,
+                employeesOnLeave: 4
+            };
+            
+            alert(`Report Generated!\n\nDate: ${reportData.date}\nTotal Hours: ${reportData.totalHours}\nPresent: ${reportData.employeesPresent}\nOn Leave: ${reportData.employeesOnLeave}\n\n(CSV download would start here in production)`);
+        }
+
+        // Chart
+        function initChart() {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                    datasets: [{
+                        label: 'Hours Worked',
+                        data: [140, 142, 138, 145, 142],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f3f4f6' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Activity Feed
+        const activities = [
+            { user: 'Sarah Johnson', action: 'clocked in', time: '10 minutes ago', icon: 'fa-sign-in-alt', color: 'green' },
+            { user: 'Mike Chen', action: 'requested leave', time: '1 hour ago', icon: 'fa-calendar', color: 'orange' },
+            { user: 'Alex Thompson', action: 'completed task', time: '2 hours ago', icon: 'fa-check-circle', color: 'blue' },
+            { user: 'Emily Davis', action: 'created new channel', time: '3 hours ago', icon: 'fa-hashtag', color: 'purple' }
+        ];
+
+        document.getElementById('activityFeed').innerHTML = activities.map(act => `
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full bg-${act.color}-100 flex items-center justify-center text-${act.color}-600 flex-shrink-0">
+                    <i class="fas ${act.icon} text-sm"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-800"><span class="font-medium">${act.user}</span> ${act.action}</p>
+                    <p class="text-xs text-gray-500">${act.time}</p>
+                </div>
+            </div>
+        `).join('');
+    </script>
+</body>
+</html>
